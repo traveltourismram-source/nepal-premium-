@@ -19,7 +19,6 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 
-
 import TopBar from "@/components/TopBar";
 import WeatherWidget from "@/components/WeatherWidget";
 import TrekkingPermits from "@/components/TrekkingPermits";
@@ -126,6 +125,15 @@ export default function Home({ targetSection }: { targetSection?: string }) {
   const rafRef = useRef<number | null>(null);
   const [heroShift, setHeroShift] = useState(0);
 
+  // ── FIX 1: Destructure user from useAuth ──────────────────
+  const { user } = useAuth();
+
+  // ── FIX 2: saveTrip stub (replace with real persistence) ──
+  const saveTrip = (o: string, d: string) => {
+    // TODO: implement backend persistence (e.g. Supabase, Firebase)
+    console.log("Saving trip:", o, "→", d);
+  };
+
   // Planner state
   const [originText, setOriginText] = useState("Kathmandu");
   const [destText, setDestText] = useState("Pokhara");
@@ -175,7 +183,7 @@ export default function Home({ targetSection }: { targetSection?: string }) {
     try { const a = JSON.parse(localStorage.getItem("nr_recent") || "[]"); if (Array.isArray(a)) setRecentTrips(a.slice(0, 6)); } catch { }
   }, []);
 
-  // Autocomplete
+  // Autocomplete — origin
   useEffect(() => {
     if (focusField !== "origin") return;
     const q = originText.trim(); if (q.length < 3) { setOriginSug([]); return; }
@@ -183,6 +191,15 @@ export default function Home({ targetSection }: { targetSection?: string }) {
     return () => clearTimeout(t);
   }, [originText, focusField]);
 
+  // ── FIX 3: Autocomplete — destination (was missing) ───────
+  useEffect(() => {
+    if (focusField !== "dest") return;
+    const q = destText.trim(); if (q.length < 3) { setDestSug([]); return; }
+    const t = setTimeout(async () => { try { setDestSug((await photonGeocode(q)).slice(0, 6)); } catch { setDestSug([]); } }, 260);
+    return () => clearTimeout(t);
+  }, [destText, focusField]);
+
+  // Autocomplete — topic
   useEffect(() => {
     if (focusTopic !== "topic") return;
     const q = topicText.trim(); if (q.length < 3) { setTopicSug([]); return; }
@@ -247,8 +264,6 @@ export default function Home({ targetSection }: { targetSection?: string }) {
     );
   }
 
-  // Destination suggestions handled via topic input
-
   // ─────────────────────────── RENDER ─────────────────────────
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -297,7 +312,7 @@ export default function Home({ targetSection }: { targetSection?: string }) {
                 <em className="not-italic" style={{ color: "var(--saffron-light, #d4865a)" }}>journey.</em>
               </h1>
 
-              <p className="mt-5 max-w-[480px] text-base leading-relaxed text-white/60">
+              <p className="mt-5 max-w-120 text-base leading-relaxed text-white/60">
                 Real routing, live weather, permit guides, AI travel tips, and hotel discovery — all free, no sign-in needed.
               </p>
 
@@ -485,7 +500,11 @@ export default function Home({ targetSection }: { targetSection?: string }) {
                     ))}
                     {route && (
                       <button type="button"
-                        onClick={() => { if (!user) { toast.error("Sign in to save."); return; } saveTrip(originText, destText); toast.success("Saved!"); }}
+                        onClick={() => {
+                          if (!user) { toast.error("Sign in to save."); return; }
+                          saveTrip(originText, destText);
+                          toast.success("Saved!");
+                        }}
                         className="flex items-center gap-1.5 rounded-lg border border-amber-400/28 bg-amber-400/8 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-amber-400/65 transition-colors hover:border-amber-400/50 hover:text-amber-400">
                         <Bookmark className="h-3 w-3" />Save
                       </button>
@@ -580,7 +599,7 @@ export default function Home({ targetSection }: { targetSection?: string }) {
 
           {/* Map + hotels */}
           <div className="rounded-2xl border border-border bg-card shadow-lift overflow-hidden">
-            <div className="relative h-[400px]">
+            <div className="relative h-100">
               <MapContainer center={[27.7172, 85.324]} zoom={7} scrollWheelZoom={false} className="h-full w-full">
                 <TileLayer attribution="© OpenStreetMap contributors" url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
                 <FitBounds bounds={mapBounds} />

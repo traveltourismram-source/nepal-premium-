@@ -47,6 +47,9 @@ export default function Profile() {
   async function handleLogout() { await logout(); toast.success("Signed out."); navigate("/"); }
 
   async function handleSave() {
+    // ── FIX: narrow user type inside async closure ────────────
+    if (!user) return;
+
     setSaving(true);
     try {
       const patch: any = {};
