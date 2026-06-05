@@ -8,7 +8,7 @@ import dotenv from "dotenv";
 import session from "express-session";
 import passport from "passport";
 import "./lib/passport";
-import "./lib/passport"; // initialize passport strategies
+
 
 import { initSchema } from "./db/schema";
 import authRouter    from "./routes/auth";

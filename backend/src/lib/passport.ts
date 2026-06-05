@@ -19,90 +19,94 @@ passport.deserializeUser(async (id: string, done) => {
   }
 });
 
-// Google OAuth Strategy
-passport.use(
-  new GoogleStrategy(
-    {
-      clientID: process.env.GOOGLE_CLIENT_ID || '',
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
-      callbackURL: `${process.env.BACKEND_URL || 'http://localhost:4001'}/api/auth/google/callback`,
-      passReqToCallback: true,
-    },
-    async (req, accessToken, refreshToken, profile: GoogleProfile, done) => {
-      try {
-        const email = profile.emails?.[0].value;
-        if (!email) return done(new Error('No email from Google'), null);
-        let user = await User.findOne({ email });
-        if (!user) {
-          // create new user record
-          const id = uuidv4();
-          user = new User({
-            _id: id,
-            first_name: profile.name?.givenName || '',
-            last_name: profile.name?.familyName || '',
-            email,
-            password_hash: '', // password not used for OAuth
-            avatar_seed: profile.displayName,
-            google_id: profile.id,
-            newsletter: 1,
-          });
-          await user.save();
-        } else {
-          // update google_id if missing
-          if (!user.google_id) {
+const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, FACEBOOK_APP_ID, FACEBOOK_APP_SECRET, BACKEND_URL } = process.env;
+
+// Google OAuth Strategy – initialize only if credentials are provided
+if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
+  passport.use(
+    new GoogleStrategy(
+      {
+        clientID: GOOGLE_CLIENT_ID,
+        clientSecret: GOOGLE_CLIENT_SECRET,
+        callbackURL: `${BACKEND_URL || 'http://localhost:4001'}/api/auth/google/callback`,
+        passReqToCallback: true,
+      },
+      async (req, accessToken, refreshToken, profile: GoogleProfile, done) => {
+        try {
+          const email = profile.emails?.[0].value;
+          if (!email) return done(new Error('No email from Google'), null);
+          let user = await User.findOne({ email });
+          if (!user) {
+            const id = uuidv4();
+            user = new User({
+              _id: id,
+              first_name: profile.name?.givenName || '',
+              last_name: profile.name?.familyName || '',
+              email,
+              password_hash: '',
+              avatar_seed: profile.displayName,
+              google_id: profile.id,
+              newsletter: 1,
+            });
+            await user.save();
+          } else if (!user.google_id) {
             user.google_id = profile.id;
             await user.save();
           }
+          return done(null, user);
+        } catch (err) {
+          return done(err as any, null);
         }
-        return done(null, user);
-      } catch (err) {
-        return done(err as any, null);
       }
-    }
-  )
-);
+    )
+  );
+} else {
+  console.warn('Google OAuth credentials not set – Google login disabled');
+}
 
-// Facebook OAuth Strategy
-passport.use(
-  new FacebookStrategy(
-    {
-      clientID: process.env.FACEBOOK_APP_ID || '',
-      clientSecret: process.env.FACEBOOK_APP_SECRET || '',
-      callbackURL: `${process.env.BACKEND_URL || 'http://localhost:4001'}/api/auth/facebook/callback`,
-      profileFields: ['id', 'emails', 'name', 'displayName'],
-      enableProof: true,
-      passReqToCallback: true,
-    },
-    async (req, accessToken, refreshToken, profile: FacebookProfile, done) => {
-      try {
-        const email = profile.emails?.[0].value;
-        if (!email) return done(new Error('No email from Facebook'), null);
-        let user = await User.findOne({ email });
-        if (!user) {
-          const id = uuidv4();
-          user = new User({
-            _id: id,
-            first_name: profile.name?.givenName || '',
-            last_name: profile.name?.familyName || '',
-            email,
-            password_hash: '',
-            avatar_seed: profile.displayName,
-            facebook_id: profile.id,
-            newsletter: 1,
-          });
-          await user.save();
-        } else {
-          if (!user.facebook_id) {
+// Facebook OAuth Strategy – initialize only if credentials are provided
+if (FACEBOOK_APP_ID && FACEBOOK_APP_SECRET) {
+  passport.use(
+    new FacebookStrategy(
+      {
+        clientID: FACEBOOK_APP_ID,
+        clientSecret: FACEBOOK_APP_SECRET,
+        callbackURL: `${BACKEND_URL || 'http://localhost:4001'}/api/auth/facebook/callback`,
+        profileFields: ['id', 'emails', 'name', 'displayName'],
+        enableProof: true,
+        passReqToCallback: true,
+      },
+      async (req, accessToken, refreshToken, profile: FacebookProfile, done) => {
+        try {
+          const email = profile.emails?.[0].value;
+          if (!email) return done(new Error('No email from Facebook'), null);
+          let user = await User.findOne({ email });
+          if (!user) {
+            const id = uuidv4();
+            user = new User({
+              _id: id,
+              first_name: profile.name?.givenName || '',
+              last_name: profile.name?.familyName || '',
+              email,
+              password_hash: '',
+              avatar_seed: profile.displayName,
+              facebook_id: profile.id,
+              newsletter: 1,
+            });
+            await user.save();
+          } else if (!user.facebook_id) {
             user.facebook_id = profile.id;
             await user.save();
           }
+          return done(null, user);
+        } catch (err) {
+          return done(err as any, null);
         }
-        return done(null, user);
-      } catch (err) {
-        return done(err as any, null);
       }
-    }
-  )
-);
+    )
+  );
+} else {
+  console.warn('Facebook OAuth credentials not set – Facebook login disabled');
+}
 
 export default passport;

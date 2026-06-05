@@ -6,27 +6,27 @@ import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from "react-
 import { LatLngBounds } from "leaflet";
 import { format } from "date-fns";
 
-import heroImg       from "@/assets/nepal-hero.jpg";
-import lakeImg       from "@/assets/nepal-lake.jpg";
-import everestImg    from "@/assets/everest.jpg";
+import heroImg from "@/assets/nepal-hero.jpg";
+import lakeImg from "@/assets/nepal-lake.jpg";
+import everestImg from "@/assets/everest.jpg";
 import everestRangeImg from "@/assets/everest-range.jpg";
-import lumbiniImg    from "@/assets/lumbini.jpg";
-import chitwanImg    from "@/assets/chitwan.jpg";
+import lumbiniImg from "@/assets/lumbini.jpg";
+import chitwanImg from "@/assets/chitwan.jpg";
 
-import { Button }    from "@/components/ui/button";
-import { Input }     from "@/components/ui/input";
-import { Badge }     from "@/components/ui/badge";
-import { Skeleton }  from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 
-import TopBar          from "@/components/TopBar";
-import WeatherWidget   from "@/components/WeatherWidget";
+
+import TopBar from "@/components/TopBar";
+import WeatherWidget from "@/components/WeatherWidget";
 import TrekkingPermits from "@/components/TrekkingPermits";
-import AiTravelTips    from "@/components/AiTravelTips";
+import AiTravelTips from "@/components/AiTravelTips";
 import ItineraryPlanner from "@/components/ItineraryPlanner";
-import SiteFooter      from "@/components/SiteFooter";
-import { useAuth }     from "@/contexts/AuthContext";
+import SiteFooter from "@/components/SiteFooter";
+import { useAuth } from "@/contexts/AuthContext";
 
 import {
   ArrowLeftRight, ArrowRight, Bookmark, Bus, CalendarDays,
@@ -36,9 +36,9 @@ import {
 } from "lucide-react";
 
 // ── Types ──────────────────────────────────────────────────────
-type Place       = { label: string; lat: number; lon: number };
-type RouteResult = { distanceKm: number; durationMin: number; geometry: [number,number][] };
-type HotelHit    = { id: string; name: string; lat: number; lon: number; stars?: string; phone?: string; website?: string; source: "Overpass" };
+type Place = { label: string; lat: number; lon: number };
+type RouteResult = { distanceKm: number; durationMin: number; geometry: [number, number][] };
+type HotelHit = { id: string; name: string; lat: number; lon: number; stars?: string; phone?: string; website?: string; source: "Overpass" };
 
 // ── Helpers ────────────────────────────────────────────────────
 function formatMins(m: number) {
@@ -72,7 +72,7 @@ async function osrmRoute(origin: Place, dest: Place): Promise<RouteResult> {
   return {
     distanceKm: (Number(r.distance) || 0) / 1000,
     durationMin: (Number(r.duration) || 0) / 60,
-    geometry: (r.geometry?.coordinates ?? []).map(([lon, lat]: [number,number]) => [lat, lon] as [number,number]),
+    geometry: (r.geometry?.coordinates ?? []).map(([lon, lat]: [number, number]) => [lat, lon] as [number, number]),
   };
 }
 
@@ -90,7 +90,7 @@ async function overpassHotels(center: Place, radiusM: number): Promise<HotelHit[
   });
 }
 
-function estimateCost(km: number, mode: "private"|"tourist-bus"|"flight", pax = 1) {
+function estimateCost(km: number, mode: "private" | "tourist-bus" | "flight", pax = 1) {
   if (!isFinite(km)) return 0;
   if (mode === "flight") return Math.round(Math.max(5000, Math.min(18000, km * 22 + 3000)) * pax);
   const base = mode === "private" ? 75 : 32, min = mode === "private" ? 1200 : 350;
@@ -128,23 +128,27 @@ export default function Home({ targetSection }: { targetSection?: string }) {
 
   // Planner state
   const [originText, setOriginText] = useState("Kathmandu");
-  const [destText,   setDestText]   = useState("Pokhara");
-  const [originSug,  setOriginSug]  = useState<Place[]>([]);
-  const [destSug,    setDestSug]    = useState<Place[]>([]);
-  const [focusField, setFocusField] = useState<"origin"|"dest"|null>(null);
-  const [recentTrips, setRecentTrips] = useState<{o:string;d:string;t:number}[]>([]);
-  const [mode,       setMode]       = useState<"private"|"tourist-bus"|"flight">("tourist-bus");
-  const [travelDate, setTravelDate] = useState<Date|null>(null);
-  const [passengers, setPassengers] = useState(1);
-  const { user, saveTrip } = useAuth();
+  const [destText, setDestText] = useState("Pokhara");
+  const [originSug, setOriginSug] = useState<Place[]>([]);
+  const [destSug, setDestSug] = useState<Place[]>([]);
+  const [focusField, setFocusField] = useState<"origin" | "dest" | null>(null);
+  const [recentTrips, setRecentTrips] = useState<{ o: string; d: string; t: number }[]>([]);
+  const [topicText, setTopicText] = useState("");
+  const [topicSug, setTopicSug] = useState<Place[]>([]);
+  const [focusTopic, setFocusTopic] = useState<"topic" | null>(null);
 
   // Results state
-  const [isLoading,    setIsLoading]    = useState(false);
-  const [origin,       setOrigin]       = useState<Place|null>(null);
-  const [dest,         setDest]         = useState<Place|null>(null);
-  const [route,        setRoute]        = useState<RouteResult|null>(null);
-  const [hotels,       setHotels]       = useState<HotelHit[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [origin, setOrigin] = useState<Place | null>(null);
+  const [dest, setDest] = useState<Place | null>(null);
+  const [route, setRoute] = useState<RouteResult | null>(null);
+  const [hotels, setHotels] = useState<HotelHit[]>([]);
   const [hotelLoading, setHotelLoading] = useState(false);
+
+  // Additional state for travel mode, passenger count, and date
+  const [mode, setMode] = useState<'tourist-bus' | 'private' | 'flight'>('tourist-bus');
+  const [passengers, setPassengers] = useState(1);
+  const [travelDate, setTravelDate] = useState<Date | null>(null);
 
   // Parallax
   useEffect(() => {
@@ -168,23 +172,23 @@ export default function Home({ targetSection }: { targetSection?: string }) {
       if (p.get("o")) setOriginText(decodeURIComponent(p.get("o")!));
       if (p.get("d")) setDestText(decodeURIComponent(p.get("d")!));
     }
-    try { const a = JSON.parse(localStorage.getItem("nr_recent") || "[]"); if (Array.isArray(a)) setRecentTrips(a.slice(0, 6)); } catch {}
+    try { const a = JSON.parse(localStorage.getItem("nr_recent") || "[]"); if (Array.isArray(a)) setRecentTrips(a.slice(0, 6)); } catch { }
   }, []);
 
   // Autocomplete
   useEffect(() => {
     if (focusField !== "origin") return;
     const q = originText.trim(); if (q.length < 3) { setOriginSug([]); return; }
-    const t = setTimeout(async () => { try { setOriginSug((await photonGeocode(q)).slice(0,6)); } catch { setOriginSug([]); } }, 260);
+    const t = setTimeout(async () => { try { setOriginSug((await photonGeocode(q)).slice(0, 6)); } catch { setOriginSug([]); } }, 260);
     return () => clearTimeout(t);
   }, [originText, focusField]);
 
   useEffect(() => {
-    if (focusField !== "dest") return;
-    const q = destText.trim(); if (q.length < 3) { setDestSug([]); return; }
-    const t = setTimeout(async () => { try { setDestSug((await photonGeocode(q)).slice(0,6)); } catch { setDestSug([]); } }, 260);
+    if (focusTopic !== "topic") return;
+    const q = topicText.trim(); if (q.length < 3) { setTopicSug([]); return; }
+    const t = setTimeout(async () => { try { setTopicSug((await photonGeocode(q)).slice(0, 6)); } catch { setTopicSug([]); } }, 260);
     return () => clearTimeout(t);
-  }, [destText, focusField]);
+  }, [topicText, focusTopic]);
 
   useEffect(() => {
     if (targetSection) document.getElementById(targetSection)?.scrollIntoView({ behavior: "smooth" });
@@ -221,13 +225,13 @@ export default function Home({ targetSection }: { targetSection?: string }) {
       const r = await osrmRoute(ob, db);
       setRoute(r);
       setHotelLoading(true);
-      const mid = { label: "mid", lat: (ob.lat+db.lat)/2, lon: (ob.lon+db.lon)/2 };
+      const mid = { label: "mid", lat: (ob.lat + db.lat) / 2, lon: (ob.lon + db.lon) / 2 };
       const [hMid, hDest] = await Promise.all([overpassHotels(mid, 4500), overpassHotels(db, 6000)]);
-      setHotels([...hDest.slice(0,6), ...hMid.slice(0,4)].slice(0,8));
+      setHotels([...hDest.slice(0, 6), ...hMid.slice(0, 4)].slice(0, 8));
       try {
-        const next = [{ o, d, t: Date.now() }, ...recentTrips].filter((x,i,a) => a.findIndex(y=>y.o===x.o&&y.d===x.d)===i).slice(0,6);
+        const next = [{ o, d, t: Date.now() }, ...recentTrips].filter((x, i, a) => a.findIndex(y => y.o === x.o && y.d === x.d) === i).slice(0, 6);
         setRecentTrips(next); localStorage.setItem("nr_recent", JSON.stringify(next));
-      } catch {}
+      } catch { }
       toast.success("Route ready!");
       setTimeout(() => document.getElementById("results")?.scrollIntoView({ behavior: "smooth" }), 60);
     } catch (e: any) { toast.error(e?.message || "Something went wrong."); }
@@ -243,12 +247,7 @@ export default function Home({ targetSection }: { targetSection?: string }) {
     );
   }
 
-  const destinations = [
-    { title: "Everest Region", sub: "Sagarmatha · Khumbu", img: everestRangeImg, preset: "Lukla" },
-    { title: "Pokhara",        sub: "Lakeside · Annapurna", img: heroImg,         preset: "Pokhara" },
-    { title: "Lumbini",        sub: "Peace · Heritage",     img: lumbiniImg,      preset: "Lumbini" },
-    { title: "Chitwan",        sub: "Jungle Safari",        img: chitwanImg,      preset: "Chitwan" },
-  ];
+  // Destination suggestions handled via topic input
 
   // ─────────────────────────── RENDER ─────────────────────────
   return (
@@ -268,11 +267,11 @@ export default function Home({ targetSection }: { targetSection?: string }) {
 
         <div className="relative mx-auto max-w-6xl px-5 pb-20 pt-6 sm:px-6">
           <TopBar nav={[
-            { label: "Planner",  href: "/#/planner"  },
-            { label: "Gallery",  href: "/#/gallery"  },
+            { label: "Planner", href: "/#/planner" },
+            { label: "Gallery", href: "/#/gallery" },
             { label: "Insights", href: "/#/insights" },
-            { label: "Contact",  href: "/#/contact"  },
-            { label: "About",    href: "/#/about"    },
+            { label: "Contact", href: "/#/contact" },
+            { label: "About", href: "/#/about" },
           ]} />
 
           {/* ── Two-column hero content ── */}
@@ -311,53 +310,41 @@ export default function Home({ targetSection }: { targetSection?: string }) {
 
               {/* Tech stats */}
               <div className="mt-8 flex flex-wrap gap-6">
-                <StatPill icon={Route}    label="Routing"   value="OSRM" />
-                <StatPill icon={Compass}  label="Geocoding" value="Photon" />
-                <StatPill icon={Hotel}    label="Hotels"    value="Overpass" />
-                <StatPill icon={Sparkles} label="AI"        value="Claude" />
+                <StatPill icon={Route} label="Routing" value="OSRM" />
+                <StatPill icon={Compass} label="Geocoding" value="Photon" />
+                <StatPill icon={Hotel} label="Hotels" value="Overpass" />
+                <StatPill icon={Sparkles} label="AI" value="Claude" />
               </div>
 
-              {/* Destination carousel */}
-              <div className="mt-10">
-                <p className="overline mb-3 text-white/38">Explore Destinations</p>
-                <Carousel opts={{ align: "start", loop: true }}>
-                  <CarouselContent className="-ml-3">
-                    {destinations.map((x) => (
-                      <CarouselItem key={x.title} className="pl-3 sm:basis-1/2">
-                        <button
-                          className="group relative w-full overflow-hidden text-left"
-                          style={{ borderRadius: "12px" }}
-                          onClick={() => {
-                            setDestText(x.preset);
-                            toast.success("Destination set.");
-                            setTimeout(() => document.getElementById("planner")?.scrollIntoView({ behavior: "smooth" }), 50);
-                          }}
-                        >
-                          <div className="h-[168px] w-full transition-transform duration-700 group-hover:scale-105"
-                            style={{ backgroundImage: `url(${x.img})`, backgroundSize: "cover", backgroundPosition: "center" }} />
-                          <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(6,9,22,0.92) 0%, rgba(6,9,22,0.12) 60%)", borderRadius: "12px" }} />
-                          <div className="absolute inset-0 p-4 flex flex-col justify-end">
-                            <div className="text-[10px] font-semibold uppercase tracking-wider text-white/50">{x.sub}</div>
-                            <div className="mt-0.5 font-bold text-white" style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.1rem" }}>{x.title}</div>
-                          </div>
-                          {/* Hover arrow */}
-                          <div className="absolute right-3 top-3 grid h-7 w-7 place-items-center rounded-lg border border-white/0 bg-amber-400/0 transition-all duration-300 group-hover:border-amber-400/50 group-hover:bg-amber-400/14">
-                            <ArrowRight className="h-3.5 w-3.5 text-amber-400 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-                          </div>
-                        </button>
-                      </CarouselItem>
-                    ))}
-                  </CarouselContent>
-                  <CarouselPrevious className="hidden md:flex -left-3 h-7 w-7 rounded-lg border-white/18 bg-white/8 text-white hover:bg-white/16" />
-                  <CarouselNext    className="hidden md:flex -right-3 h-7 w-7 rounded-lg border-white/18 bg-white/8 text-white hover:bg-white/16" />
-                </Carousel>
-              </div>
             </motion.div>
 
             {/* Right column — planner card */}
             <motion.div id="planner" className="scroll-mt-20"
               initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.08, ease: "easeOut" }}>
               <div className="glass rounded-2xl p-6">
+
+                {/* TOPIC */}
+                <div className="mb-5">
+                  <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.14em] text-white/38">Topic</label>
+                  <div className="relative">
+                    <Input className="planner-input h-10 text-sm" value={topicText}
+                      onChange={e => { setTopicText(e.target.value); setFocusTopic("topic"); }}
+                      onFocus={() => setFocusTopic("topic")}
+                      onBlur={() => setTimeout(() => setFocusTopic(f => f === "topic" ? null : f), 150)}
+                      placeholder="Enter a travel topic" />
+                    {focusTopic === "topic" && topicSug.length > 0 && (
+                      <div className="dark-dropdown absolute z-30 mt-1 w-full shadow-float">
+                        {topicSug.map(p => (
+                          <button key={p.label + p.lat} type="button" className="block w-full px-3 py-2 text-left text-sm transition-colors"
+                            onMouseDown={e => e.preventDefault()}
+                            onClick={() => { setTopicText(p.label); setTopicSug([]); setFocusTopic(null); }}>
+                            {p.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
 
                 {/* Card header */}
                 <div className="flex items-center justify-between gap-3 mb-5">
@@ -388,7 +375,7 @@ export default function Home({ targetSection }: { targetSection?: string }) {
                       {focusField === "origin" && originSug.length > 0 && (
                         <div className="dark-dropdown absolute z-30 mt-1 w-full shadow-float">
                           {originSug.map(p => (
-                            <button key={p.label+p.lat} type="button" className="block w-full px-3 py-2 text-left text-sm transition-colors"
+                            <button key={p.label + p.lat} type="button" className="block w-full px-3 py-2 text-left text-sm transition-colors"
                               onMouseDown={e => e.preventDefault()}
                               onClick={() => { setOriginText(p.label); setOriginSug([]); setFocusField(null); }}>
                               {p.label}
@@ -398,7 +385,7 @@ export default function Home({ targetSection }: { targetSection?: string }) {
                       )}
                     </div>
                     <div className="mt-2 flex flex-wrap gap-1.5">
-                      {["Kathmandu","Pokhara","Bhaktapur"].map(x => (
+                      {["Kathmandu", "Pokhara", "Bhaktapur"].map(x => (
                         <button key={x} type="button" onClick={() => setOriginText(x)}
                           className="rounded-md border border-white/10 bg-white/6 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white/38 transition-colors hover:border-amber-400/38 hover:text-amber-400/75">
                           {x}
@@ -419,7 +406,7 @@ export default function Home({ targetSection }: { targetSection?: string }) {
                       {focusField === "dest" && destSug.length > 0 && (
                         <div className="dark-dropdown absolute z-30 mt-1 w-full shadow-float">
                           {destSug.map(p => (
-                            <button key={p.label+p.lat} type="button" className="block w-full px-3 py-2 text-left text-sm transition-colors"
+                            <button key={p.label + p.lat} type="button" className="block w-full px-3 py-2 text-left text-sm transition-colors"
                               onMouseDown={e => e.preventDefault()}
                               onClick={() => { setDestText(p.label); setDestSug([]); setFocusField(null); }}>
                               {p.label}
@@ -429,7 +416,7 @@ export default function Home({ targetSection }: { targetSection?: string }) {
                       )}
                     </div>
                     <div className="mt-2 flex flex-wrap gap-1.5">
-                      {["Pokhara","Chitwan","Lumbini"].map(x => (
+                      {["Pokhara", "Chitwan", "Lumbini"].map(x => (
                         <button key={x} type="button" onClick={() => setDestText(x)}
                           className="rounded-md border border-white/10 bg-white/6 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white/38 transition-colors hover:border-amber-400/38 hover:text-amber-400/75">
                           {x}
@@ -443,16 +430,15 @@ export default function Home({ targetSection }: { targetSection?: string }) {
                     <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-white/38">Travel Mode</label>
                     <div className="grid grid-cols-3 gap-1.5">
                       {([
-                        { k: "tourist-bus", icon: Bus,    label: "Bus" },
-                        { k: "private",     icon: Wallet, label: "Private" },
-                        { k: "flight",      icon: Plane,  label: "Flight" },
+                        { k: "tourist-bus", icon: Bus, label: "Bus" },
+                        { k: "private", icon: Wallet, label: "Private" },
+                        { k: "flight", icon: Plane, label: "Flight" },
                       ] as const).map(({ k, icon: Icon, label }) => (
                         <button key={k} type="button" onClick={() => setMode(k)}
-                          className={`flex items-center justify-center gap-1.5 rounded-lg border py-2 text-xs font-bold uppercase tracking-wider transition-all ${
-                            mode === k
-                              ? "border-amber-400/60 bg-amber-400/16 text-amber-300"
-                              : "border-white/10 bg-white/5 text-white/36 hover:border-white/20 hover:text-white/60"
-                          }`}>
+                          className={`flex items-center justify-center gap-1.5 rounded-lg border py-2 text-xs font-bold uppercase tracking-wider transition-all ${mode === k
+                            ? "border-amber-400/60 bg-amber-400/16 text-amber-300"
+                            : "border-white/10 bg-white/5 text-white/36 hover:border-white/20 hover:text-white/60"
+                            }`}>
                           <Icon className="h-3 w-3" />{label}
                         </button>
                       ))}
@@ -469,9 +455,9 @@ export default function Home({ targetSection }: { targetSection?: string }) {
                     </div>
                     <div className="flex items-center gap-1 rounded-lg border border-white/10 bg-white/6 px-3 py-2">
                       <Users className="h-3.5 w-3.5 shrink-0 text-white/35" />
-                      <button type="button" onClick={() => setPassengers(p => Math.max(1, p-1))} className="w-5 text-center font-bold text-white/40 hover:text-white">−</button>
+                      <button type="button" onClick={() => setPassengers(p => Math.max(1, p - 1))} className="w-5 text-center font-bold text-white/40 hover:text-white">−</button>
                       <span className="w-4 text-center text-xs font-bold text-white/75">{passengers}</span>
-                      <button type="button" onClick={() => setPassengers(p => Math.min(50, p+1))} className="w-5 text-center font-bold text-white/40 hover:text-white">+</button>
+                      <button type="button" onClick={() => setPassengers(p => Math.min(50, p + 1))} className="w-5 text-center font-bold text-white/40 hover:text-white">+</button>
                     </div>
                   </div>
 
@@ -488,9 +474,9 @@ export default function Home({ targetSection }: { targetSection?: string }) {
                   {/* Secondary actions */}
                   <div className="flex flex-wrap gap-2">
                     {[
-                      { icon: ArrowLeftRight, label: "Swap",  fn: () => { const t=originText; setOriginText(destText); setDestText(t); } },
-                      { icon: Link2,          label: "Share", fn: () => { const u=`${location.origin}${location.pathname}#/?o=${encodeURIComponent(originText)}&d=${encodeURIComponent(destText)}`; navigator.clipboard.writeText(u).then(()=>toast.success("Link copied!")); } },
-                      { icon: Landmark,       label: "Demo",  fn: () => { setOriginText("Kathmandu"); setDestText("Pokhara"); toast.success("Demo loaded."); } },
+                      { icon: ArrowLeftRight, label: "Swap", fn: () => { const t = originText; setOriginText(destText); setDestText(t); } },
+                      { icon: Link2, label: "Share", fn: () => { const u = `${location.origin}${location.pathname}#/?o=${encodeURIComponent(originText)}&d=${encodeURIComponent(destText)}`; navigator.clipboard.writeText(u).then(() => toast.success("Link copied!")); } },
+                      { icon: Landmark, label: "Demo", fn: () => { setOriginText("Kathmandu"); setDestText("Pokhara"); toast.success("Demo loaded."); } },
                     ].map(({ icon: Icon, label, fn }) => (
                       <button key={label} type="button" onClick={fn}
                         className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/6 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-white/38 transition-colors hover:border-white/20 hover:text-white/65">
@@ -509,7 +495,7 @@ export default function Home({ targetSection }: { targetSection?: string }) {
                   {recentTrips.length > 0 && (
                     <div className="text-[10px] text-white/28">
                       <span className="uppercase tracking-wider">Recent:</span>{" "}
-                      {recentTrips.slice(0,2).map(x => (
+                      {recentTrips.slice(0, 2).map(x => (
                         <button key={x.t} type="button" className="ml-2 underline decoration-dotted text-white/42 transition-colors hover:text-white/70"
                           onClick={() => { setOriginText(x.o); setDestText(x.d); }}>
                           {x.o} → {x.d}
@@ -564,8 +550,8 @@ export default function Home({ targetSection }: { targetSection?: string }) {
                 <Separator />
                 <div className="grid grid-cols-2 gap-3">
                   {[
-                    { icon: Clock,   label: "Duration",  value: formatMins(route.durationMin) },
-                    { icon: Compass, label: "Distance",  value: `${route.distanceKm.toFixed(1)} km` },
+                    { icon: Clock, label: "Duration", value: formatMins(route.durationMin) },
+                    { icon: Compass, label: "Distance", value: `${route.distanceKm.toFixed(1)} km` },
                   ].map(({ icon: Icon, label, value }) => (
                     <div key={label} className="rounded-xl bg-secondary p-4">
                       <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-2"><Icon className="h-3.5 w-3.5" />{label}</div>
@@ -579,7 +565,7 @@ export default function Home({ targetSection }: { targetSection?: string }) {
                       <div className="flex items-center gap-2 text-sm font-semibold mb-0.5"><Wallet className="h-4 w-4 text-primary" />Estimated Cost</div>
                       <div className="text-xs text-muted-foreground">
                         {mode === "private" ? "Private vehicle" : mode === "flight" ? "Domestic flight" : "Tourist bus"}
-                        {" "}· {passengers} pax{travelDate ? ` · ${format(travelDate,"dd MMM")}` : ""}
+                        {" "}· {passengers} pax{travelDate ? ` · ${format(travelDate, "dd MMM")}` : ""}
                       </div>
                     </div>
                     <div className="text-right">
@@ -595,14 +581,14 @@ export default function Home({ targetSection }: { targetSection?: string }) {
           {/* Map + hotels */}
           <div className="rounded-2xl border border-border bg-card shadow-lift overflow-hidden">
             <div className="relative h-[400px]">
-              <MapContainer center={[27.7172,85.324]} zoom={7} scrollWheelZoom={false} className="h-full w-full">
+              <MapContainer center={[27.7172, 85.324]} zoom={7} scrollWheelZoom={false} className="h-full w-full">
                 <TileLayer attribution="© OpenStreetMap contributors" url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
                 <FitBounds bounds={mapBounds} />
                 {route?.geometry?.length && (
                   <Polyline positions={route.geometry} pathOptions={{ color: "#c9640e", weight: 5, opacity: 0.95 }} />
                 )}
                 {origin && <Marker position={[origin.lat, origin.lon]}><Popup><div className="font-medium text-xs">Start · {origin.label}</div></Popup></Marker>}
-                {dest   && <Marker position={[dest.lat,   dest.lon  ]}><Popup><div className="font-medium text-xs">End · {dest.label}</div></Popup></Marker>}
+                {dest && <Marker position={[dest.lat, dest.lon]}><Popup><div className="font-medium text-xs">End · {dest.label}</div></Popup></Marker>}
                 {hotels.map(h => (
                   <Marker key={h.id} position={[h.lat, h.lon]}>
                     <Popup><div className="font-medium text-xs">{h.name}</div>{h.website && <a className="text-[10px] text-blue-600 underline" href={h.website} target="_blank" rel="noreferrer">Website</a>}</Popup>
@@ -630,7 +616,7 @@ export default function Home({ targetSection }: { targetSection?: string }) {
 
               {hotelLoading ? (
                 <div className="grid gap-2.5 sm:grid-cols-2">
-                  {Array.from({length:4}).map((_,i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}
+                  {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}
                 </div>
               ) : hotels.length ? (
                 <div className="grid gap-2.5 sm:grid-cols-2">
@@ -648,7 +634,7 @@ export default function Home({ targetSection }: { targetSection?: string }) {
                       </div>
                       {h.website && (
                         <a className="mt-2 block truncate text-xs text-blue-600 hover:underline" href={h.website} target="_blank" rel="noreferrer">
-                          {h.website.replace(/^https?:\/\//,"").slice(0,36)}
+                          {h.website.replace(/^https?:\/\//, "").slice(0, 36)}
                         </a>
                       )}
                     </div>
@@ -668,11 +654,11 @@ export default function Home({ targetSection }: { targetSection?: string }) {
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {[
             { title: "Pokhara · Phewa Lake", img: heroImg },
-            { title: "Nepal Lake Horizon",   img: lakeImg },
-            { title: "Everest Range",        img: everestRangeImg },
-            { title: "Mount Everest",        img: everestImg },
-            { title: "Lumbini",             img: lumbiniImg },
-            { title: "Chitwan",             img: chitwanImg },
+            { title: "Nepal Lake Horizon", img: lakeImg },
+            { title: "Everest Range", img: everestRangeImg },
+            { title: "Mount Everest", img: everestImg },
+            { title: "Lumbini", img: lumbiniImg },
+            { title: "Chitwan", img: chitwanImg },
           ].map(x => (
             <div key={x.title} className="group overflow-hidden rounded-xl border border-border bg-card shadow-lift">
               <div className="h-44 w-full transition-transform duration-700 group-hover:scale-105"
@@ -698,9 +684,9 @@ export default function Home({ targetSection }: { targetSection?: string }) {
               </p>
               <div className="mt-6 grid gap-3 sm:grid-cols-3">
                 {[
-                  { t: "For hotels",   d: "Send your Google Maps pin + photos + price range." },
+                  { t: "For hotels", d: "Send your Google Maps pin + photos + price range." },
                   { t: "For agencies", d: "We can add trekking routes, permits, and guides." },
-                  { t: "For ads",      d: "Sponsored slots + click tracking will be enabled." },
+                  { t: "For ads", d: "Sponsored slots + click tracking will be enabled." },
                 ].map(item => (
                   <div key={item.t} className="border-t border-border pt-3">
                     <div className="text-xs font-bold mb-1">{item.t}</div>
@@ -772,13 +758,13 @@ export default function Home({ targetSection }: { targetSection?: string }) {
             <h3 className="font-display text-2xl mb-6">Built for Real Traffic</h3>
             <div className="grid gap-1">
               {[
-                { icon: Navigation, title: "Instant route preview",  desc: "Live map + summary after one click." },
-                { icon: Wallet,     title: "Cost estimate",          desc: "Bus, private vehicle, or domestic flight." },
-                { icon: Hotel,      title: "Hotel discovery",        desc: "OpenStreetMap Overpass API." },
-                { icon: CloudSun,   title: "Live weather",           desc: "Open-Meteo — free, no key needed." },
-                { icon: ShieldCheck,title: "Trekking permits",       desc: "Region-aware permit database." },
-                { icon: Sparkles,   title: "AI travel tips",         desc: "Claude by Anthropic, context-aware." },
-                { icon: CalendarDays,title:"Itinerary builder",      desc: "Editable day-by-day planner." },
+                { icon: Navigation, title: "Instant route preview", desc: "Live map + summary after one click." },
+                { icon: Wallet, title: "Cost estimate", desc: "Bus, private vehicle, or domestic flight." },
+                { icon: Hotel, title: "Hotel discovery", desc: "OpenStreetMap Overpass API." },
+                { icon: CloudSun, title: "Live weather", desc: "Open-Meteo — free, no key needed." },
+                { icon: ShieldCheck, title: "Trekking permits", desc: "Region-aware permit database." },
+                { icon: Sparkles, title: "AI travel tips", desc: "Claude by Anthropic, context-aware." },
+                { icon: CalendarDays, title: "Itinerary builder", desc: "Editable day-by-day planner." },
               ].map(f => (
                 <div key={f.title} className="flex items-start gap-3 border-b border-border py-3 last:border-0">
                   <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary/8 border border-primary/15">
@@ -855,9 +841,9 @@ export default function Home({ targetSection }: { targetSection?: string }) {
           <div className="grid gap-4 text-xs text-muted-foreground md:grid-cols-4">
             {[
               { t: "Routing & Maps", d: "OpenStreetMap, OSRM, Photon geocoder." },
-              { t: "Weather",        d: "Open-Meteo API — free, no key needed." },
-              { t: "AI Tips",        d: "Claude by Anthropic — context-aware advice." },
-              { t: "Disclaimer",     d: "Estimates only. Verify permits & costs locally." },
+              { t: "Weather", d: "Open-Meteo API — free, no key needed." },
+              { t: "AI Tips", d: "Claude by Anthropic — context-aware advice." },
+              { t: "Disclaimer", d: "Estimates only. Verify permits & costs locally." },
             ].map(item => (
               <div key={item.t} className="border-t border-border pt-3">
                 <div className="font-bold text-foreground mb-1">{item.t}</div>
@@ -874,7 +860,7 @@ export default function Home({ targetSection }: { targetSection?: string }) {
       <div className="fixed bottom-4 left-1/2 z-50 w-[min(480px,calc(100vw-2rem))] -translate-x-1/2 md:hidden">
         <div className="glass flex items-center gap-2 rounded-2xl p-2">
           {[
-            { label: "Planner",  target: "planner"  },
+            { label: "Planner", target: "planner" },
             { label: "Insights", target: "insights" },
           ].map(({ label, target }) => (
             <button key={label}

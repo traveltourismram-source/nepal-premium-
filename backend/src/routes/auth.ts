@@ -9,6 +9,8 @@ import {
   hashToken,
   refreshExpiresAt,
 } from "../lib/jwt";
+import "../lib/passport";
+import passport from "passport";
 import { requireAuth, AuthRequest } from "../middleware/auth";
 
 const router = Router();
